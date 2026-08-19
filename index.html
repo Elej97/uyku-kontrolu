@@ -3,111 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💤 Goz Kapaklari Uyku Modu Kontrolu</title>
+    <title>Göz Kapakları Uyku Modu Kontrolü</title>
     <meta name="description" content="MediaPipe Face Mesh ile web tarayıcısında gerçek zamanlı göz kapağı takibi ve uyku modu geçiş sistemi.">
     
-    <!-- Google Fonts: Outfit -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-
     <!-- MediaPipe CDNs -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 
     <style>
-        :root {
-            --bg-color: #0b0c10;
-            --panel-bg: rgba(31, 38, 52, 0.45);
-            --panel-border: rgba(255, 255, 255, 0.08);
-            --accent-green: #00e676;
-            --accent-red: #ff1744;
-            --accent-blue: #29b6f6;
-            --text-color: #f5f6fa;
-            --text-muted: #8b9bb4;
-        }
-
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(41, 182, 246, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(0, 230, 118, 0.04) 0%, transparent 45%);
-            color: var(--text-color);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow-x: hidden;
-        }
-
-        header {
+        body, html {
             width: 100%;
-            max-width: 1200px;
-            padding: 2.5rem 1.5rem 1.5rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo-area h1 {
-            font-size: 1.8rem;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #29b6f6, #00e676);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1200px;
-            padding: 0 1.5rem 3rem 1.5rem;
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 2rem;
-        }
-
-        @media (max-width: 900px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Video / Canvas Panel */
-        .video-panel {
-            background: var(--panel-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--panel-border);
-            border-radius: 24px;
-            padding: 1.5rem;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .view-wrapper {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 16/9;
-            background-color: #050608;
-            border-radius: 16px;
+            height: 100%;
+            background-color: #000;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-family: Arial, sans-serif;
         }
 
-        /* Hide raw video, only show canvas */
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
         #webcam {
             display: none;
         }
@@ -118,338 +44,232 @@
             object-fit: cover;
         }
 
-        /* Controls / Settings Panel */
-        .settings-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .card {
-            background: var(--panel-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--panel-border);
-            border-radius: 24px;
-            padding: 1.8rem;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        .card h2 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1.2rem;
-            color: var(--text-color);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding-bottom: 0.6rem;
-        }
-
-        .input-group {
-            margin-bottom: 1.2rem;
-        }
-
-        .input-group label {
-            display: block;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-
-        .input-group input[type="text"] {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 0.8rem 1rem;
-            color: var(--text-color);
-            font-family: inherit;
-            font-size: 0.95rem;
-            transition: all 0.2s ease;
-        }
-
-        .input-group input[type="text"]:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        /* Range Sliders */
-        .range-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .range-wrapper span {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--accent-blue);
-            min-width: 40px;
-        }
-
-        input[type="range"] {
-            flex: 1;
-            -webkit-appearance: none;
-            background: rgba(255, 255, 255, 0.1);
-            height: 6px;
-            border-radius: 3px;
-            outline: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: var(--accent-blue);
-            cursor: pointer;
-            transition: transform 0.1s ease;
-        }
-
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
-        }
-
-        /* EAR Monitors */
-        .ear-monitor-box {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 0.5rem;
-        }
-
-        .ear-value-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 16px;
-            padding: 1rem;
-            text-align: center;
-        }
-
-        .ear-value-card .title {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-        }
-
-        .ear-value-card .value {
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: var(--text-color);
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            background: rgba(255, 255, 255, 0.05);
-            margin-top: 1rem;
-            align-self: flex-start;
-        }
-
-        .status-badge.active {
-            background: rgba(0, 230, 118, 0.15);
-            color: var(--accent-green);
-        }
-
-        .status-badge.closed {
-            background: rgba(255, 23, 68, 0.15);
-            color: var(--accent-red);
-        }
-
-        /* Overlay indicator for countdown */
+        /* Sol Üst Yuvarlak Geri Sayım Göstergesi (Python GUI stili) */
         .countdown-overlay {
             position: absolute;
-            top: 2.5rem;
-            left: 2.5rem;
+            top: 25px;
+            left: 25px;
             z-index: 10;
+            width: 120px;
+            height: 120px;
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 50%;
+            background: rgba(20, 20, 20, 0.45);
         }
 
         .circle-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 120px;
+            height: 120px;
             transform: rotate(-90deg);
+            transform-origin: center;
         }
 
         .circle-bg {
             fill: none;
-            stroke: rgba(255, 255, 255, 0.08);
-            stroke-width: 8;
+            stroke: rgba(60, 60, 60, 0.8);
+            stroke-width: 10;
         }
 
         .circle-progress {
             fill: none;
-            stroke: var(--accent-green);
-            stroke-width: 8;
+            stroke: #00e676; /* yeşil */
+            stroke-width: 10;
             stroke-linecap: round;
             transition: stroke-dashoffset 0.1s linear;
         }
 
         .countdown-number {
             position: absolute;
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: var(--accent-red);
+            font-size: 2.8rem;
+            font-weight: bold;
+            color: #ff1744; /* kırmızı */
             text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+            z-index: 12;
         }
 
         .countdown-dots {
+            position: absolute;
             display: flex;
             gap: 6px;
+            z-index: 12;
         }
 
         .dot {
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(130, 130, 130, 0.8);
         }
 
-        .dot.active {
-            animation: pulse 1s infinite alternate;
-            background: var(--text-muted);
+        /* Alt Bilgi Çubuğu (Python GUI stili) */
+        .status-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background: #121212;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 0.95rem;
+            z-index: 10;
+            color: #969696;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        @keyframes pulse {
-            from { opacity: 0.4; }
-            to { opacity: 1; }
+        .status-text {
+            font-weight: 500;
         }
 
-        /* Launch info toast */
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: #1e293b;
-            border-left: 4px solid var(--accent-green);
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            transform: translateY(150%);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .ear-info {
+            color: #c8c8c8;
+        }
+
+        /* Gizli Ayarlar Paneli (Klavye ile 's' tuşuna basarak veya ekrana tıklayarak açılabilir) */
+        .settings-overlay {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(18, 18, 18, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 25px;
             z-index: 100;
+            width: 320px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .settings-overlay.show {
+            display: block;
+        }
+
+        .settings-overlay h3 {
+            margin-bottom: 15px;
+            color: #fff;
+            font-size: 1.1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: #8b9bb4;
+            margin-bottom: 5px;
+        }
+
+        .input-group input[type="text"] {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 8px;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        .range-wrapper {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
-        .toast.show {
-            transform: translateY(0);
+        .range-wrapper span {
+            color: #29b6f6;
+            font-size: 0.9rem;
+            min-width: 35px;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            background: #29b6f6;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            padding: 8px;
+            width: 100%;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="logo-area">
-            <h1><span>💤</span> Goz Uyku Modu Kontrolu</h1>
-        </div>
-    </header>
-
-    <main class="container">
-        
-        <!-- Live Feed Panel -->
-        <div class="video-panel">
-            <!-- Countdown Circle Overlay -->
-            <div class="countdown-overlay" id="countdownContainer">
-                <svg width="120" height="120" class="circle-svg">
-                    <circle cx="60" cy="60" r="50" class="circle-bg" />
-                    <circle cx="60" cy="60" r="50" class="circle-progress" id="progressCircle" stroke-dasharray="314.16" stroke-dashoffset="314.16" />
-                </svg>
-                <div class="countdown-number" id="countdownNum"></div>
-                <div class="countdown-dots" id="countdownDots">
-                    <div class="dot active"></div>
-                    <div class="dot active"></div>
-                    <div class="dot active"></div>
-                </div>
-            </div>
-
-            <div class="view-wrapper">
-                <video id="webcam" autoplay playsinline></video>
-                <canvas id="output_canvas"></canvas>
-            </div>
-
-            <div class="status-badge" id="statusBadge">
-                Kamera yukleniyor...
+    <div id="container" onclick="handleContainerClick(event)">
+        <!-- Sol Üst Geri Sayım Çemberi -->
+        <div class="countdown-overlay" id="countdownContainer">
+            <svg width="120" height="120" class="circle-svg">
+                <circle cx="60" cy="60" r="50" class="circle-bg" />
+                <circle cx="60" cy="60" r="50" class="circle-progress" id="progressCircle" stroke-dasharray="314.16" stroke-dashoffset="314.16" />
+            </svg>
+            <div class="countdown-number" id="countdownNum"></div>
+            <div class="countdown-dots" id="countdownDots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
             </div>
         </div>
 
-        <!-- Controls Side Panel -->
-        <div class="settings-panel">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="output_canvas"></canvas>
+
+        <!-- Alt Bilgi Çubuğu -->
+        <div class="status-bar">
+            <div class="status-text" id="statusText">Gözler bekleniyor...</div>
+            <div class="ear-info" id="earInfo">EAR Sol: 0.000 | EAR Sağ: 0.000 | Eşik: 0.21</div>
+        </div>
+
+        <!-- Gizli Ayarlar Paneli (Ekrana çift tıklayarak veya 'S' tuşuna basarak açılır) -->
+        <div class="settings-overlay" id="settingsOverlay">
+            <h3>⚙️ Ayarlar</h3>
             
-            <!-- Realtime Calibration -->
-            <div class="card">
-                <h2>📊 Canli EAR Degerleri</h2>
-                <div class="ear-monitor-box">
-                    <div class="ear-value-card">
-                        <div class="title">EAR Sol Göz</div>
-                        <div class="value" id="earLeftVal">0.00</div>
-                    </div>
-                    <div class="ear-value-card">
-                        <div class="title">EAR Sağ Göz</div>
-                        <div class="value" id="earRightVal">0.00</div>
-                    </div>
+            <div class="input-group">
+                <label for="thresholdSlider">Göz Kapalı Eşiği (EAR Eşiği)</label>
+                <div class="range-wrapper">
+                    <input type="range" id="thresholdSlider" min="0.12" max="0.30" step="0.01" value="0.21">
+                    <span id="thresholdVal">0.21</span>
                 </div>
             </div>
 
-            <!-- Parameters Configuration -->
-            <div class="card">
-                <h2>⚙️ Ayarlar</h2>
-                
-                <!-- EAR Threshold -->
-                <div class="input-group">
-                    <label for="thresholdSlider">Göz Kapalı Eşiği (EAR Threshold)</label>
-                    <div class="range-wrapper">
-                        <input type="range" id="thresholdSlider" min="0.12" max="0.30" step="0.01" value="0.21">
-                        <span id="thresholdVal">0.21</span>
-                    </div>
-                </div>
-
-                <!-- Countdown Target -->
-                <div class="input-group">
-                    <label for="targetSlider">Geri Sayım Süresi (Saniye)</label>
-                    <div class="range-wrapper">
-                        <input type="range" id="targetSlider" min="1" max="10" step="1" value="3">
-                        <span id="targetVal">3s</span>
-                    </div>
-                </div>
-
-                <!-- Cooldown -->
-                <div class="input-group">
-                    <label for="cooldownSlider">Tekrar Tetiklenme Beklemesi (Saniye)</label>
-                    <div class="range-wrapper">
-                        <input type="range" id="cooldownSlider" min="5" max="60" step="5" value="15">
-                        <span id="cooldownVal">15s</span>
-                    </div>
-                </div>
-
-                <!-- YouTube URL -->
-                <div class="input-group">
-                    <label for="youtubeUrlInput">Açılacak Video Linki</label>
-                    <input type="text" id="youtubeUrlInput" value="https://www.youtube.com/shorts/_EiWd-7-hLM">
+            <div class="input-group">
+                <label for="targetSlider">Geri Sayım Süresi (Saniye)</label>
+                <div class="range-wrapper">
+                    <input type="range" id="targetSlider" min="1" max="10" step="1" value="3">
+                    <span id="targetVal">3s</span>
                 </div>
             </div>
 
-        </div>
+            <div class="input-group">
+                <label for="cooldownSlider">Tekrar Tetiklenme Beklemesi (Saniye)</label>
+                <div class="range-wrapper">
+                    <input type="range" id="cooldownSlider" min="5" max="60" step="5" value="15">
+                    <span id="cooldownVal">15s</span>
+                </div>
+            </div>
 
-    </main>
+            <div class="input-group">
+                <label for="youtubeUrlInput">Video Linki</label>
+                <input type="text" id="youtubeUrlInput" value="https://www.youtube.com/shorts/_EiWd-7-hLM">
+            </div>
 
-    <!-- Notification Toast -->
-    <div class="toast" id="toast">
-        <span style="font-size: 1.5rem;">🎉</span>
-        <div>
-            <strong style="display: block;">Video Açıldı!</strong>
-            <span style="font-size: 0.85rem; color: var(--text-muted);" id="toastLink">Yönlendiriliyor...</span>
+            <button class="close-btn" onclick="toggleSettings()">Kaydet ve Kapat</button>
+            <p style="font-size: 0.7rem; color: #8b9bb4; text-align: center; margin-top: 10px;">
+                (Ayarları açmak/kapatmak için 'S' tuşuna basabilirsin)
+            </p>
         </div>
     </div>
 
@@ -459,8 +279,8 @@
         const canvasElement = document.getElementById('output_canvas');
         const canvasCtx = canvasElement.getContext('2d');
         
-        const earLeftValEl = document.getElementById('earLeftVal');
-        const earRightValEl = document.getElementById('earRightVal');
+        const statusText = document.getElementById('statusText');
+        const earInfo = document.getElementById('earInfo');
         
         const thresholdSlider = document.getElementById('thresholdSlider');
         const thresholdValEl = document.getElementById('thresholdVal');
@@ -472,14 +292,11 @@
         const cooldownValEl = document.getElementById('cooldownVal');
         
         const youtubeUrlInput = document.getElementById('youtubeUrlInput');
-        const statusBadge = document.getElementById('statusBadge');
+        const settingsOverlay = document.getElementById('settingsOverlay');
         
         const progressCircle = document.getElementById('progressCircle');
         const countdownNum = document.getElementById('countdownNum');
         const countdownDots = document.getElementById('countdownDots');
-
-        const toast = document.getElementById('toast');
-        const toastLink = document.getElementById('toastLink');
 
         // Dynamic State Variables
         let earThreshold = parseFloat(thresholdSlider.value);
@@ -489,12 +306,12 @@
 
         let eyesClosedSince = null;
         let lastTriggered = 0;
-        let currentStatus = "Kamera Hazırlanıyor...";
 
         // Listeners for adjustments
         thresholdSlider.addEventListener('input', (e) => {
             earThreshold = parseFloat(e.target.value);
             thresholdValEl.textContent = earThreshold.toFixed(2);
+            updateStatusText();
         });
 
         targetSlider.addEventListener('input', (e) => {
@@ -511,6 +328,28 @@
             youtubeUrl = e.target.value;
         });
 
+        // Toggle Settings overlay via keyboard or button
+        function toggleSettings() {
+            settingsOverlay.classList.toggle('show');
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 's') {
+                toggleSettings();
+            }
+        });
+
+        // Click outside settings to close or double-click to open
+        let lastClick = 0;
+        function handleContainerClick(e) {
+            const now = Date.now();
+            if (now - lastClick < 300) {
+                // Double click detection to toggle settings
+                toggleSettings();
+            }
+            lastClick = now;
+        }
+
         // Circle circumference (2 * PI * r) where r = 50 -> 314.16
         const strokeCircumference = 314.16;
 
@@ -525,7 +364,6 @@
         }
 
         function calculateEAR(eyePoints, landmarks, width, height) {
-            // eyePoints: [top, bottom, left, right]
             const top = landmarks[eyePoints[0]];
             const bottom = landmarks[eyePoints[1]];
             const left = landmarks[eyePoints[2]];
@@ -543,10 +381,9 @@
         const LEFT_EYE = [386, 374, 362, 263];
 
         function onResults(results) {
-            // Set canvas dimensions to match the raw feed if it doesn't match
-            if (canvasElement.width !== videoElement.videoWidth) {
-                canvasElement.width = videoElement.videoWidth;
-                canvasElement.height = videoElement.videoHeight;
+            if (canvasElement.width !== window.innerWidth) {
+                canvasElement.width = window.innerWidth;
+                canvasElement.height = window.innerHeight;
             }
 
             const width = canvasElement.width;
@@ -571,28 +408,25 @@
                 earR = calculateEAR(RIGHT_EYE, landmarks, width, height);
                 earL = calculateEAR(LEFT_EYE, landmarks, width, height);
 
-                earLeftValEl.textContent = earL.toFixed(3);
-                earRightValEl.textContent = earR.toFixed(3);
+                earInfo.textContent = `EAR Sol: ${earL.toFixed(3)} | EAR Sağ: ${earR.toFixed(3)} | Eşik: ${earThreshold}`;
 
                 // Both eyes closed
                 if (earR < earThreshold && earL < earThreshold) {
                     eyesClosed = true;
                 }
 
-                // Draw eye landmarks
-                canvasCtx.fillStyle = '#ffeb3b';
+                // Draw eye landmarks (yellow dots, mirrored)
+                canvasCtx.fillStyle = '#ffff00';
                 [...RIGHT_EYE, ...LEFT_EYE].forEach(idx => {
                     const pt = landmarks[idx];
-                    // Mirroring x position for drawing since video display is not flipped inside context drawing
                     const px = (1 - pt.x) * width;
                     const py = pt.y * height;
                     canvasCtx.beginPath();
-                    canvasCtx.arc(px, py, 2.5, 0, 2 * Math.PI);
+                    canvasCtx.arc(px, py, 3, 0, 2 * Math.PI);
                     canvasCtx.fill();
                 });
             } else {
-                earLeftValEl.textContent = "0.00";
-                earRightValEl.textContent = "0.00";
+                earInfo.textContent = `Gözler algılanamadı.`;
             }
 
             // Geri Sayım ve Tetikleme Mantığı
@@ -600,11 +434,9 @@
             const elapsedCooldown = Math.max(0, Math.ceil(cooldownSeconds - (now - lastTriggered) / 1000));
 
             if (elapsedCooldown > 0) {
-                currentStatus = `Bekleniyor - ${elapsedCooldown}s sonra aktif`;
-                statusBadge.className = "status-badge";
-                statusBadge.textContent = currentStatus;
+                statusText.style.color = "#ffaa00";
+                statusText.textContent = `Bekleniyor - tekrar ${elapsedCooldown}s sonra aktif`;
                 
-                // Hide circle countdown, show waiting dots
                 countdownNum.style.display = "none";
                 countdownDots.style.display = "flex";
                 setCountdownProgress(0);
@@ -613,37 +445,31 @@
                 countdownDots.style.display = "none";
                 
                 if (eyesClosed) {
-                    statusBadge.className = "status-badge closed";
+                    statusText.style.color = "#00ff55";
                     if (eyesClosedSince === null) {
                         eyesClosedSince = now;
                     }
                     const elapsed = (now - eyesClosedSince) / 1000;
                     const remaining = Math.max(0, Math.ceil(countdownTarget - elapsed));
                     
-                    statusBadge.textContent = `Gözler Kapalı! ${remaining}s sonra açılıyor...`;
+                    statusText.textContent = `Gözler Kapalı! ${remaining}s sonra uyku moduna geçiliyor...`;
 
                     countdownNum.style.display = "block";
                     countdownNum.textContent = remaining;
-                    countdownNum.style.color = "var(--accent-red)";
                     
                     setCountdownProgress(Math.min(elapsed / countdownTarget, 1.0));
 
-                    // Tetikleme
+                    // Tetikleme (Pop-up engeline takılmadan direkt sayfayı yönlendirir)
                     if (elapsed >= countdownTarget) {
                         lastTriggered = now;
                         eyesClosedSince = null;
                         
-                        // Show toast notification
-                        toastLink.textContent = youtubeUrl;
-                        toast.classList.add('show');
-                        setTimeout(() => toast.classList.remove('show'), 4000);
-
-                        // Open link in new tab
-                        window.open(youtubeUrl, '_blank');
+                        // Direkt Yönlendirme (Asla tarayıcı tarafından engellenmez)
+                        window.location.href = youtubeUrl;
                     }
                 } else {
-                    statusBadge.className = "status-badge active";
-                    statusBadge.textContent = "Gözler Açık (Uyku Bekleniyor)";
+                    statusText.style.color = "#969696";
+                    statusText.textContent = "Gözler açık (Uyku Bekleniyor)...";
                     
                     countdownNum.style.display = "none";
                     countdownDots.style.display = "flex";
@@ -651,6 +477,10 @@
                     eyesClosedSince = null;
                 }
             }
+        }
+
+        function updateStatusText() {
+            earInfo.textContent = `EAR Sol: 0.000 | EAR Sağ: 0.000 | Eşik: ${earThreshold}`;
         }
 
         // Initialize FaceMesh Detector
@@ -678,12 +508,12 @@
 
         camera.start()
             .then(() => {
-                statusBadge.className = "status-badge active";
-                statusBadge.textContent = "Gözler Açık (Uyku Bekleniyor)";
+                statusText.style.color = "#969696";
+                statusText.textContent = "Gözler açık (Uyku Bekleniyor)...";
             })
             .catch(err => {
-                statusBadge.className = "status-badge closed";
-                statusBadge.textContent = "Hata: Kamera başlatılamadı!";
+                statusText.style.color = "#ff0000";
+                statusText.textContent = "Hata: Kamera başlatılamadı!";
                 console.error(err);
             });
     </script>
