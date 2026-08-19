@@ -14,7 +14,7 @@ from mediapipe.python.solutions import face_mesh as mp_face_mesh
 # ─────────────────────────────────────────
 # AYARLAR
 # ─────────────────────────────────────────
-YOUTUBE_URL         = "https://www.youtube.com/shorts/_EiWd-7-hLM"
+YOUTUBE_URL         = "https://www.youtube.com/shorts/apfqttx3qU8"
 COOLDOWN_SECONDS    = 15      # Video açıldıktan sonra tekrar açılmaması için bekleme
 CAMERA_INDEX        = 0
 FRAME_WIDTH         = 1280
